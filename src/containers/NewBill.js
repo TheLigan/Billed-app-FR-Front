@@ -17,29 +17,42 @@ export default class NewBill {
   }
   handleChangeFile = e => {
     e.preventDefault()
-    const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
-    const filePath = e.target.value.split(/\\/g)
-    const fileName = filePath[filePath.length-1]
+    const input = this.document.querySelector(`input[data-testid="file"]`)
+    const errorMessage = this.document.querySelector(".file-error")
+    const file = input.files[0]
+    const filePath = input.value.split(/\\/g)
+    let fileName = filePath[filePath.length-1]
     const formData = new FormData()
     const email = JSON.parse(localStorage.getItem("user")).email
-    formData.append('file', file)
-    formData.append('email', email)
 
-    this.store
-      .bills()
-      .create({
-        data: formData,
-        headers: {
-          noContentType: true
-        }
-      })
-      .then(({fileUrl, key}) => {
-        console.log(fileUrl)
-        this.billId = key
-        this.fileUrl = fileUrl
-        this.fileName = fileName
-      }).catch(error => console.error(error))
+    if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+        errorMessage.classList.add("visible")
+        input.value = ''
+        return
+    } else {
+        errorMessage.classList.remove("visible")
+        formData.append("file", file);
+		formData.append("email", email);
+        this.store
+        .bills()
+        .create({
+            data: formData,
+            headers: {
+                noContentType: true
+            }
+        })
+        .then(
+            ({fileUrl, key}) => {
+                this.billId = key
+                this.fileUrl = fileUrl
+                this.fileName = fileName
+            }
+        ).catch(
+            error => console.error(error)
+        )
+    }
   }
+  
   handleSubmit = e => {
     e.preventDefault()
     console.log('e.target.querySelector(`input[data-testid="datepicker"]`).value', e.target.querySelector(`input[data-testid="datepicker"]`).value)
@@ -61,8 +74,9 @@ export default class NewBill {
     this.onNavigate(ROUTES_PATH['Bills'])
   }
 
-  // not need to cover this function by tests
+
   updateBill = (bill) => {
+    /* istanbul ignore next */
     if (this.store) {
       this.store
       .bills()
